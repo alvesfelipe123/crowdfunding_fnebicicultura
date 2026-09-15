@@ -1,4 +1,4 @@
-# Aurora Store
+# Crowdfunding FNEBicicultura
 
 Loja online com catálogo de produtos físicos e pagamento real via **Mercado Pago (Checkout Pro)**. Construída com **Next.js 16** (App Router), TypeScript e Tailwind CSS.
 
