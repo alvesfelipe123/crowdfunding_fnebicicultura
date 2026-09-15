@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aurora Store
 
-## Getting Started
+Loja online com catálogo de produtos físicos e pagamento real via **Mercado Pago (Checkout Pro)**. Construída com **Next.js 16** (App Router), TypeScript e Tailwind CSS.
 
-First, run the development server:
+## Funcionalidades
+
+- Catálogo de produtos com página de detalhes
+- Carrinho de compras com persistência local (localStorage)
+- Checkout redirecionado para o ambiente seguro do Mercado Pago (cartão, boleto e PIX)
+- Webhook que atualiza o status do pedido quando o pagamento é confirmado
+- Página de sucesso com consulta do pedido em tempo real
+- Suporte a tema claro e escuro
+
+## Como executar
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configuração do Mercado Pago
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Crie uma conta em https://www.mercadopago.com.br
+2. No painel, acesse **Developers > Credenciais** e copie o **Access Token** da aplicação
+3. Copie `.env.example` para `.env` e preencha:
 
-## Learn More
+```env
+MERCADO_PAGO_ACCESS_TOKEN=APP_USR-xxxxxxxx
+PUBLIC_URL=http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+- **`MERCADO_PAGO_ACCESS_TOKEN`**: token de produção (ou `TEST-...` de teste). Com token de teste, o pagamento é simulado e nenhum dinheiro é cobrado.
+- **`PUBLIC_URL`**: URL pública da loja. Em desenvolvimento local, use `http://localhost:3000`. Em produção, use o domínio real (ex.: `https://minhaloja.com.br`). É usada para o webhook e para as imagens dos produtos.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> **Importante (webhook em desenvolvimento local):** o Mercado Pago só consegue notificar a loja por uma URL pública. Localmente, a confirmação do pagamento ainda funciona via `back_urls` (você é redirecionado para `/success` após pagar), mas o webhook precisa de um túnel como [ngrok](https://ngrok.com) ou de um deploy. Em produção, o webhook é chamado automaticamente.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Como os pagamentos funcionam
 
-## Deploy on Vercel
+1. O cliente finaliza a compra no checkout
+2. A API `POST /api/checkout` cria o pedido e uma **preferência** no Mercado Pago
+3. O cliente é redirecionado para o Checkout Pro e paga
+4. O Mercado Pago redireciona de volta para `/success` e envia a notificação para `POST /api/webhooks/mercadopago`
+5. O webhook consulta o pagamento e atualiza o status do pedido
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Os pedidos são salvos em `.data/orders.json` (apenas para desenvolvimento). Para produção, troque `lib/orders.ts` por um banco de dados real.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Estrutura
+
+```
+app/
+  page.tsx                 # Catálogo
+  products/[slug]/page.tsx # Detalhes do produto
+  cart/page.tsx            # Carrinho
+  checkout/page.tsx        # Checkout
+  success/page.tsx         # Confirmação do pedido
+  api/checkout/route.ts    # Cria pedido + preferência MP
+  api/webhooks/mercadopago/route.ts  # Recebe notificações
+  api/orders/[id]/route.ts # Consulta o pedido
+lib/
+  products.ts              # Catálogo de produtos (edite aqui)
+  cart-context.tsx         # Estado do carrinho
+  mercadopago.ts           # Integração com o Mercado Pago
+  orders.ts                # Armazenamento dos pedidos
+components/                # Header, footer, cards, botões
+```
+
+## Personalização
+
+- **Produtos**: edite `lib/products.ts`
+- **Cores e estilo**: edite `app/globals.css` e as classes Tailwind
+- **Nome da loja**: edite `components/header.tsx` e `app/layout.tsx`
