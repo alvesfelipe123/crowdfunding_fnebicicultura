@@ -25,12 +25,22 @@ export default function Home() {
           Apoie a campanha e escolha sua recompensa com 
           pagamento seguro via Mercado Pago.
         </p>
-        <a
-          href="#recompensas"
-          className="mt-8 inline-flex h-12 items-center justify-center rounded-full bg-teal-700 px-8 font-semibold text-white transition-transform hover:scale-105"
-        >
-          Ver recompensas
-        </a>
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
+          <a
+            href="#recompensas"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-teal-700 px-8 font-semibold text-white transition-transform hover:scale-105"
+          >
+            Ver recompensas
+          </a>
+          <a
+            href="https://bicicultura.org.br/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-12 items-center justify-center rounded-full border-2 border-teal-700 px-8 font-semibold text-teal-700 transition-transform hover:scale-105"
+          >
+            Site do evento
+          </a>
+        </div>
       </section>
 
       <section id="recompensas">
