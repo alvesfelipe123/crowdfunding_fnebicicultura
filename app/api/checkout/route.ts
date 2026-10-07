@@ -17,6 +17,8 @@ export async function POST(request: Request) {
       .map((item) => ({
         slug: item.slug,
         quantity: item.quantity,
+        size: item.size,
+        color: item.color,
       }))
       .map((item) => {
         const product = getProductBySlug(item.slug);
@@ -36,6 +38,8 @@ export async function POST(request: Request) {
       name: item.product.name,
       quantity: item.quantity,
       unitPrice: item.product.price,
+      ...(item.size ? { size: item.size } : {}),
+      ...(item.color ? { color: item.color } : {}),
     }));
     const total = items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
@@ -50,13 +54,23 @@ export async function POST(request: Request) {
     });
 
     const preference = await createPreference(
-      items.map((item) => ({
-        slug: item.product.slug,
-        name: item.product.name,
-        price: item.product.price,
-        image: item.product.image,
-        quantity: item.quantity,
-      })),
+      items.map((item) => {
+        const label = [
+          item.size ? `Tam. ${item.size}` : null,
+          item.color ?? null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        return {
+          slug: item.product.slug,
+          name: label ? `${item.product.name} — ${label}` : item.product.name,
+          price: item.product.price,
+          image: item.product.image,
+          quantity: item.quantity,
+          ...(item.size ? { size: item.size } : {}),
+          ...(item.color ? { color: item.color } : {}),
+        };
+      }),
       order.id,
     );
 

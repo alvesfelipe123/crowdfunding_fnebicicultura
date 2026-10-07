@@ -18,6 +18,8 @@ export type Order = {
     name: string;
     quantity: number;
     unitPrice: number;
+    size?: string;
+    color?: string;
   }[];
   total: number;
   payerEmail?: string;

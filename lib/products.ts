@@ -7,6 +7,8 @@ export type Product = {
   image: string;
   gallery?: string[];
   featured?: boolean;
+  sizes?: string[];
+  colors?: string[];
 };
 
 export const products: Product[] = [
@@ -38,7 +40,7 @@ export const products: Product[] = [
     slug: "chaveiro-areia-colorida",
     name: "Chaveiro de areia colorida",
     category: "Acessórios",
-    price: 10,
+    price: 15,
     description:
       "Chaveiro de areia colorida, lembrancinha típica do Nordeste. O desenho será personalizado de acordo com o tema do evento!",
     image: "/products/Chaveiro de areia.png",
@@ -54,12 +56,13 @@ export const products: Product[] = [
   },
   {
     slug: "cap",
-    name: "Cap",
+    name: "Cap CUIDA",
     category: "Vestuário",
     price: 50,
-    description:
-      "Cap com ajuste regulável para proteger do sol em todos os passeios.",
+    description: "Cap 3 painéis, aba flexível, tecido Dryfit",
     image: "/products/Cap.png",
+    gallery: ["/products/Cap.png", "/products/Cap-tamanhos.jpeg"],
+    sizes: ["P", "M", "G"],
   },
   {
     slug: "camiseta-algodao",
@@ -68,12 +71,9 @@ export const products: Product[] = [
     price: 60,
     description:
       "Camiseta 100% algodão, confortável e respirável para uso no dia a dia.",
-    image: "/products/Camiseta - amarela.png",
-    gallery: [
-      "/products/Camiseta - amarela.png",
-      "/products/Camiseta - branca.png",
-      "/products/Camiseta - rosa.png",
-    ],
+    image: "/products/Camiseta-poliamida.jpeg",
+    gallery: ["/products/Camiseta-poliamida.jpeg"],
+    sizes: ["PP", "P", "M", "G", "GG"],
   },
   {
     slug: "camiseta-poliamida",
@@ -81,13 +81,10 @@ export const products: Product[] = [
     category: "Vestuário",
     price: 70,
     description:
-      "Camiseta em poliamida de secagem rápida, perfeita para os treinos.",
-    image: "/products/Camiseta - branca.png",
-    gallery: [
-      "/products/Camiseta - branca.png",
-      "/products/Camiseta - amarela.png",
-      "/products/Camiseta - rosa.png",
-    ],
+      "Camiseta em poliamida, tecido leve e de secagem rápida, perfeita para os pedais ou treinos.",
+    image: "/products/Camiseta-poliamida.jpeg",
+    gallery: ["/products/Camiseta-poliamida.jpeg"],
+    sizes: ["PP", "P", "M", "G", "GG"],
   },
   {
     slug: "cropped-lasbicis",
@@ -95,25 +92,29 @@ export const products: Product[] = [
     category: "Vestuário",
     price: 70,
     description:
-      "Cropped LASBICIS com modelagem moderna para compor o look ciclista.",
+      "Cropped com design exclusivo, a peça é feita 100% de algodão penteado, 30.1 tão macio que abraça a pele quando coloca.",
     image: "/products/Cropped - frente.png",
     gallery: [
       "/products/Cropped - frente.png",
       "/products/Cropped - costas.png",
+      "/products/Cropped-tamanho.png",
     ],
+    sizes: ["P", "M", "G"],
   },
   {
     slug: "camisetao-lasbicis",
-    name: "Camisetão LASBICIS",
+    name: "Regata LASBICIS",
     category: "Vestuário",
     price: 80,
     description:
-      "Camisetão LASBICIS com caimento amplo e estilo para dentro e fora da bike.",
+      "Regata com um design exclusivo, tecido 100% algodão 30.1 penteado. A modelagem diferenciada da regata traz um elegância com o efeito do ombro reto.",
     image: "/products/Camisetao - frente.png",
     gallery: [
       "/products/Camisetao - frente.png",
       "/products/Camisetao - costas.png",
+      "/products/Regata-tamanho.png",
     ],
+    sizes: ["P", "M", "G"],
   },
   {
     slug: "sacoche-hito",
@@ -121,13 +122,16 @@ export const products: Product[] = [
     category: "Acessórios",
     price: 100,
     description:
-      "Sacoche HITO para carregar seus itens essenciais com praticidade e segurança.",
-    image: "/products/Sacoche Hito.png",
+      "Sacoche em nylon resinado Rip Stop, com alça auxiliar, e 2 bolsos externos. Largura de 34 cm, altura 26 cm, e profundidade 5 cm.",
+    image: "/products/Sacoche-HITO-00.jpeg",
     gallery: [
+      "/products/Sacoche-HITO-00.jpeg",
+      "/products/Sacoche-HITO-01.jpeg",
       "/products/Sacoche Hito.png",
       "/products/Sacoche Hito-2.png",
       "/products/Sacoche Hito-3.png",
     ],
+    colors: ["Amarelo", "Azul", "Rosa"],
   },
 ];
 

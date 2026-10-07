@@ -56,13 +56,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {product.gallery && product.gallery.length > 0 ? (
           <ProductGallery images={product.gallery} alt={product.name} />
         ) : (
-          <div className="relative aspect-square overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800">
+          <div className="relative aspect-square overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
             <Image
               src={product.image}
               alt={product.name}
               fill
               priority
-              className="object-cover"
+              className="object-contain p-4"
               sizes="(min-width: 1024px) 50vw, 100vw"
             />
           </div>

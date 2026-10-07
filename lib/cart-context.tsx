@@ -16,17 +16,36 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
+  size?: string;
+  color?: string;
+};
+
+export type CartVariant = {
+  size?: string;
+  color?: string;
 };
 
 type CartContextValue = {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (slug: string) => void;
-  updateQuantity: (slug: string, quantity: number) => void;
+  addItem: (product: Product, quantity?: number, variant?: CartVariant) => void;
+  removeItem: (slug: string, variant?: CartVariant) => void;
+  updateQuantity: (
+    slug: string,
+    quantity: number,
+    variant?: CartVariant,
+  ) => void;
   clearCart: () => void;
   count: number;
   subtotal: number;
 };
+
+function matches(item: CartItem, slug: string, variant?: CartVariant): boolean {
+  return (
+    item.slug === slug &&
+    (item.size ?? "") === (variant?.size ?? "") &&
+    (item.color ?? "") === (variant?.color ?? "")
+  );
+}
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -78,43 +97,53 @@ function getServerSnapshot(): CartItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const addItem = useCallback((product: Product, quantity = 1) => {
-    const existing = items.find((item) => item.slug === product.slug);
-    if (existing) {
-      items = items.map((item) =>
-        item.slug === product.slug
-          ? { ...item, quantity: item.quantity + quantity }
-          : item,
+  const addItem = useCallback(
+    (product: Product, quantity = 1, variant?: CartVariant) => {
+      const existing = items.find((item) =>
+        matches(item, product.slug, variant),
       );
-    } else {
-      items = [
-        ...items,
-        {
-          slug: product.slug,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-          quantity,
-        },
-      ];
-    }
+      if (existing) {
+        items = items.map((item) =>
+          matches(item, product.slug, variant)
+            ? { ...item, quantity: item.quantity + quantity }
+            : item,
+        );
+      } else {
+        items = [
+          ...items,
+          {
+            slug: product.slug,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            quantity,
+            ...(variant?.size ? { size: variant.size } : {}),
+            ...(variant?.color ? { color: variant.color } : {}),
+          },
+        ];
+      }
+      emit();
+    },
+    [],
+  );
+
+  const removeItem = useCallback((slug: string, variant?: CartVariant) => {
+    items = items.filter((item) => !matches(item, slug, variant));
     emit();
   }, []);
 
-  const removeItem = useCallback((slug: string) => {
-    items = items.filter((item) => item.slug !== slug);
-    emit();
-  }, []);
-
-  const updateQuantity = useCallback((slug: string, quantity: number) => {
-    items =
-      quantity <= 0
-        ? items.filter((item) => item.slug !== slug)
-        : items.map((item) =>
-            item.slug === slug ? { ...item, quantity } : item,
-          );
-    emit();
-  }, []);
+  const updateQuantity = useCallback(
+    (slug: string, quantity: number, variant?: CartVariant) => {
+      items =
+        quantity <= 0
+          ? items.filter((item) => !matches(item, slug, variant))
+          : items.map((item) =>
+              matches(item, slug, variant) ? { ...item, quantity } : item,
+            );
+      emit();
+    },
+    [],
+  );
 
   const clearCart = useCallback(() => {
     items = [];

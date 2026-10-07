@@ -157,7 +157,10 @@ function CheckoutContent() {
           <h2 className="mb-4 text-lg font-bold">Resumo do pedido</h2>
           <div className="flex flex-col gap-3">
             {items.map((item) => (
-              <div key={item.slug} className="flex items-center gap-3">
+              <div
+                key={`${item.slug}-${item.size ?? ""}-${item.color ?? ""}`}
+                className="flex items-center gap-3"
+              >
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                   <Image
                     src={item.image}
@@ -168,7 +171,20 @@ function CheckoutContent() {
                   />
                 </div>
                 <div className="flex-1 text-sm">
-                  <p className="font-medium leading-tight">{item.name}</p>
+                  <p className="font-medium leading-tight">
+                    {item.name}
+                    {(item.size || item.color) && (
+                      <span className="ml-1 font-normal text-zinc-500 dark:text-zinc-400">
+                        ·{" "}
+                        {[
+                          item.size ? `Tam. ${item.size}` : null,
+                          item.color ?? null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {item.quantity} × {formatPrice(item.price)}
                   </p>

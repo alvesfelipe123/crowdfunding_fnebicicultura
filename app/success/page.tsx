@@ -16,7 +16,7 @@ import { formatPrice } from "@/lib/utils";
 type OrderInfo = {
   status: string;
   total: number;
-  items: { name: string; quantity: number }[];
+  items: { name: string; quantity: number; size?: string; color?: string }[];
 } | null;
 
 function SuccessContent() {
@@ -133,12 +133,23 @@ function SuccessContent() {
             Pedido #{orderId?.slice(0, 8)}
           </p>
           <ul className="flex flex-col gap-2">
-            {state.order.items.map((item) => (
+            {state.order.items.map((item, index) => (
               <li
-                key={item.name}
+                key={`${item.name}-${item.size ?? ""}-${item.color ?? ""}-${index}`}
                 className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400"
               >
-                <span>{item.name}</span>
+                <span>
+                  {item.name}
+                  {(() => {
+                    const label = [
+                      item.size ? `Tam. ${item.size}` : null,
+                      item.color ?? null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ");
+                    return label ? ` — ${label}` : "";
+                  })()}
+                </span>
                 <span>× {item.quantity}</span>
               </li>
             ))}
