@@ -33,13 +33,18 @@ A GoDaddy detecta o framework automaticamente. Confirme:
 
 ### 3. Variáveis de ambiente (muito importante)
 
-Adicione **exatamente essas duas** no painel da GoDaddy
+Adicione **exatamente essas três** no painel da GoDaddy
 (Websites → seu site → **Environment Variables**):
 
 ```
 MERCADO_PAGO_ACCESS_TOKEN=APP_USR-seu-token-de-producao-aqui
 PUBLIC_URL=SUA_URL_PUBLICA
+ADMIN_TOKEN=uma-frase-secreta-longa
 ```
+
+> `ADMIN_TOKEN` protege o painel de pedidos em `https://seudominio.com/admin`.
+> Sem ele, a página mostra instruções de configuração. Use uma frase secreta
+> longa e não a compartilhe.
 
 > ⚠️ **`PUBLIC_URL`** não pode ser `http://localhost:3000` em produção.
 > Use a URL pública que a GoDaddy gerar (ex.: `https://seuapp.seudominio.com`).

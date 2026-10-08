@@ -9,6 +9,7 @@ Loja online com catálogo de produtos físicos e pagamento real via **Mercado Pa
 - Checkout redirecionado para o ambiente seguro do Mercado Pago (cartão, boleto e PIX)
 - Webhook que atualiza o status do pedido quando o pagamento é confirmado
 - Página de sucesso com consulta do pedido em tempo real
+- Painel administrativo de pedidos em `/admin` (protegido pela variável `ADMIN_TOKEN`)
 - Suporte a tema claro e escuro
 
 ## Como executar

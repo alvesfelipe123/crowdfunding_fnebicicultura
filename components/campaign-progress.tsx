@@ -1,7 +1,7 @@
 import { getApprovedTotal } from "@/lib/orders";
 import { formatPrice } from "@/lib/utils";
 
-const CAMPAIGN_GOAL = 15000;
+export const CAMPAIGN_GOAL = 15000;
 
 export async function CampaignProgress() {
   const raised = await getApprovedTotal();

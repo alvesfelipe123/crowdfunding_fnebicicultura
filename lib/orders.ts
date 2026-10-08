@@ -71,6 +71,13 @@ export async function getOrder(id: string): Promise<Order | null> {
   return orders.find((order) => order.id === id) ?? null;
 }
 
+export async function listOrders(): Promise<Order[]> {
+  const orders = await readOrders();
+  return [...orders].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+  );
+}
+
 export async function getApprovedTotal(): Promise<number> {
   const orders = await readOrders();
   return orders
