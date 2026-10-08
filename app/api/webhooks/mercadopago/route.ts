@@ -1,27 +1,7 @@
 import { NextResponse } from "next/server";
 import { Payment } from "mercadopago";
-import { getMercadoPagoClient } from "@/lib/mercadopago";
-import { updateOrderStatus, type OrderStatus } from "@/lib/orders";
-
-function mapPaymentStatus(status?: string): OrderStatus | null {
-  switch (status) {
-    case "approved":
-      return "approved";
-    case "pending":
-    case "in_process":
-      return "pending";
-    case "rejected":
-      return "rejected";
-    case "cancelled":
-    case "cancelled_by_payment_authorization":
-    case "cancelled_by_customer":
-      return "cancelled";
-    case "in_mediation":
-      return "pending_review";
-    default:
-      return null;
-  }
-}
+import { getMercadoPagoClient, mapPaymentStatus } from "@/lib/mercadopago";
+import { updateOrderStatus } from "@/lib/orders";
 
 type MercadoPagoNotification = {
   type?: string;

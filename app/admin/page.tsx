@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { listOrders, type Order, type OrderStatus } from "@/lib/orders";
+import {
+  getPaymentDetails,
+  searchRecentPayments,
+  type PaymentSummary,
+} from "@/lib/mercadopago";
 import { formatPrice } from "@/lib/utils";
 import { CAMPAIGN_GOAL } from "@/components/campaign-progress";
 
@@ -58,6 +63,145 @@ function describeItem(item: Order["items"][number]): string {
     .filter(Boolean)
     .join(", ");
   return variant ? `${item.name} (${variant})` : item.name;
+}
+
+type AdminRow = {
+  key: string;
+  orderId: string;
+  status: OrderStatus;
+  total: number;
+  items: Order["items"];
+  payerName?: string;
+  payerEmail?: string;
+  paymentId?: string;
+  createdAt: string;
+  source: "arquivo local" | "Mercado Pago" | "ambos";
+};
+
+function statusRank(status: OrderStatus | null): number {
+  if (status === "approved") return 3;
+  if (status === "pending" || status === "in_process") return 2;
+  return status ? 1 : 0;
+}
+
+/**
+ * Junta o arquivo local de pedidos com os pagamentos do Mercado Pago.
+ * O Mercado Pago é a fonte de verdade: pagamentos que sumiram do arquivo
+ * local (redeploy) voltam a aparecer, com status e valor atuais.
+ */
+async function loadRows(): Promise<{
+  rows: AdminRow[];
+  mpAvailable: boolean;
+  mpCount: number;
+  localCount: number;
+}> {
+  const [orders, payments] = await Promise.all([
+    listOrders(),
+    searchRecentPayments(180, 500),
+  ]);
+
+  const rows = new Map<string, AdminRow>();
+  for (const order of orders) {
+    rows.set(order.id, {
+      key: order.id,
+      orderId: order.id,
+      status: order.status,
+      total: order.total,
+      items: order.items,
+      payerName: order.payerName,
+      payerEmail: order.payerEmail,
+      paymentId: order.paymentId,
+      createdAt: order.createdAt,
+      source: "arquivo local",
+    });
+  }
+  const localCount = rows.size;
+
+  if (!payments) {
+    return {
+      rows: [...rows.values()],
+      mpAvailable: false,
+      mpCount: 0,
+      localCount,
+    };
+  }
+
+  // melhor pagamento por pedido (aprovado tem prioridade)
+  const best = new Map<string, PaymentSummary>();
+  for (const payment of payments) {
+    const key = payment.orderId ?? `mp:${payment.paymentId}`;
+    const current = best.get(key);
+    if (!current || statusRank(payment.status) > statusRank(current.status)) {
+      best.set(key, payment);
+    }
+  }
+
+  // pagamentos sem pedido local e sem itens na metadata: busca no Mercado Pago
+  const missingIds = [...best.entries()]
+    .filter(([key, payment]) => !rows.has(key) && !payment.items?.length)
+    .map(([, payment]) => payment.paymentId)
+    .slice(0, 50);
+  const details = await getPaymentDetails(missingIds);
+
+  for (const [key, payment] of best) {
+    const existing = rows.get(key);
+    if (existing) {
+      if (payment.status) {
+        existing.status = payment.status;
+      }
+      existing.paymentId = payment.paymentId;
+      if (payment.amount > 0) {
+        existing.total = payment.amount;
+      }
+      existing.payerEmail = existing.payerEmail ?? payment.payerEmail;
+      existing.source = "ambos";
+      continue;
+    }
+
+    const detail = details?.get(payment.paymentId);
+    const mpItems = payment.items?.length
+      ? payment.items
+      : detail?.items;
+    const items: Order["items"] = mpItems?.length
+      ? mpItems.map((item) => ({
+          slug: "",
+          name: item.title,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        }))
+      : [
+          {
+            slug: "",
+            name: payment.description ?? "Pagamento Mercado Pago",
+            quantity: 1,
+            unitPrice: payment.amount,
+          },
+        ];
+
+    rows.set(key, {
+      key,
+      orderId: payment.orderId ?? payment.paymentId,
+      status: payment.status ?? "pending",
+      total: payment.amount,
+      items,
+      payerName: detail?.payerName,
+      payerEmail: detail?.payerEmail ?? payment.payerEmail,
+      paymentId: payment.paymentId,
+      createdAt: payment.createdAt,
+      source: "Mercado Pago",
+    });
+  }
+
+  const sorted = [...rows.values()].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+  );
+
+  return {
+    rows: sorted,
+    mpAvailable: true,
+    mpCount: payments.length,
+    localCount,
+  };
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
@@ -143,7 +287,7 @@ export default async function AdminPage({
     return <TokenForm error={token ? true : undefined} />;
   }
 
-  const all = await listOrders();
+  const { rows: all, mpAvailable, mpCount, localCount } = await loadRows();
   const activeFilter = status ?? "all";
   const orders =
     activeFilter === "all"
@@ -164,9 +308,23 @@ export default async function AdminPage({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold tracking-tight">Pedidos</h1>
         <span className="text-sm text-zinc-500">
-          {all.length} pedido{all.length === 1 ? "" : "s"} no total
+          {all.length} pedido{all.length === 1 ? "" : "s"} no total ·{" "}
+          {mpAvailable
+            ? `Mercado Pago: ${mpCount} pagamento${mpCount === 1 ? "" : "s"} · arquivo local: ${localCount}`
+            : "arquivo local"}
         </span>
       </div>
+
+      {!mpAvailable && (
+        <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+          Não foi possível consultar a API do Mercado Pago — exibindo apenas o
+          arquivo local (que pode estar vazio após um redeploy). Verifique o{" "}
+          <code className="rounded bg-amber-100 px-1">
+            MERCADO_PAGO_ACCESS_TOKEN
+          </code>
+          .
+        </div>
+      )}
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -249,42 +407,50 @@ export default async function AdminPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {orders.map((order) => (
-                <tr key={order.id} className="align-top">
+              {orders.map((row) => (
+                <tr key={row.key} className="align-top">
                   <td className="px-4 py-3">
                     <p className="font-mono text-xs text-zinc-700">
-                      {order.id.slice(0, 8)}
+                      {row.orderId.slice(0, 8)}
                     </p>
-                    {order.paymentId && (
-                      <p className="text-xs text-zinc-400">
-                        MP {order.paymentId}
+                    {row.paymentId && (
+                      <p className="text-xs text-zinc-400">MP {row.paymentId}</p>
+                    )}
+                    {row.source === "Mercado Pago" && (
+                      <p className="text-[10px] font-semibold uppercase text-indigo-500">
+                        só no MP
                       </p>
                     )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
-                    {formatDate(order.createdAt)}
+                    {formatDate(row.createdAt)}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-zinc-800">{order.payerName ?? "—"}</p>
+                    <p className="text-zinc-800">{row.payerName ?? "—"}</p>
                     <p className="text-xs text-zinc-400">
-                      {order.payerEmail ?? "—"}
+                      {row.payerEmail ?? "—"}
                     </p>
                   </td>
                   <td className="px-4 py-3">
                     <ul className="flex flex-col gap-1">
-                      {order.items.map((item, index) => (
-                        <li key={`${order.id}-${index}`} className="text-zinc-700">
+                      {row.items.map((item, index) => (
+                        <li
+                          key={`${row.key}-${index}`}
+                          className="text-zinc-700"
+                        >
                           {describeItem(item)}{" "}
-                          <span className="text-zinc-400">× {item.quantity}</span>
+                          <span className="text-zinc-400">
+                            × {item.quantity}
+                          </span>
                         </li>
                       ))}
                     </ul>
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={order.status} />
+                    <StatusBadge status={row.status} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-zinc-900">
-                    {formatPrice(order.total)}
+                    {formatPrice(row.total)}
                   </td>
                 </tr>
               ))}
@@ -294,8 +460,9 @@ export default async function AdminPage({
       )}
 
       <p className="mt-6 text-xs text-zinc-400">
-        Pedidos salvos em <code>.data/orders.json</code> no servidor. Status
-        atualizado pelo webhook do Mercado Pago.
+        Combina o arquivo local <code>.data/orders.json</code> com os
+        pagamentos da API do Mercado Pago (fonte de verdade — sobrevive a
+        redeploys). O webhook do Mercado Pago atualiza o arquivo local.
       </p>
     </div>
   );

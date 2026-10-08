@@ -1,10 +1,10 @@
-import { getApprovedTotal } from "@/lib/orders";
+import { getRaisedTotal } from "@/lib/fundraising";
 import { formatPrice } from "@/lib/utils";
 
 export const CAMPAIGN_GOAL = 15000;
 
 export async function CampaignProgress() {
-  const raised = await getApprovedTotal();
+  const { total: raised } = await getRaisedTotal();
   const percentage = Math.min(100, Math.round((raised / CAMPAIGN_GOAL) * 100));
 
   return (
