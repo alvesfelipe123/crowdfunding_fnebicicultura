@@ -10,6 +10,7 @@ export async function POST(request: Request) {
       items?: CartItem[];
       name?: string;
       email?: string;
+      cpf?: string;
     };
 
     const items = (body.items ?? [])
@@ -64,6 +65,8 @@ export async function POST(request: Request) {
         return {
           slug: item.product.slug,
           name: label ? `${item.product.name} — ${label}` : item.product.name,
+          description: item.product.description,
+          category: item.product.category,
           price: item.product.price,
           image: item.product.image,
           quantity: item.quantity,
@@ -72,6 +75,7 @@ export async function POST(request: Request) {
         };
       }),
       order.id,
+      { name: body.name, email: body.email, cpf: body.cpf },
     );
 
     if (!preference.ok) {

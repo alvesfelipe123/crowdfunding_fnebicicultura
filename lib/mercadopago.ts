@@ -1,5 +1,4 @@
 import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
-import type { CartItem } from "@/lib/cart-context";
 import type { OrderStatus } from "@/lib/orders";
 
 export function getMercadoPagoClient(): MercadoPagoConfig | null {
@@ -34,9 +33,64 @@ export type CreatePreferenceResult =
   | { ok: true; initPoint: string; preferenceId: string }
   | { ok: false; error: string };
 
+export type PreferenceItem = {
+  slug: string;
+  name: string;
+  description?: string;
+  category?: string;
+  price: number;
+  image: string;
+  quantity: number;
+};
+
+export type PreferencePayer = {
+  name?: string;
+  email?: string;
+  cpf?: string;
+};
+
+/**
+ * Dados do comprador na preferência ajudam o motor antifraude a aprovar
+ * pagamentos legítimos (quanto mais completo, menor a recusa por risco).
+ */
+function buildPayer(payer?: PreferencePayer): {
+  name?: string;
+  surname?: string;
+  email?: string;
+  identification?: { type: string; number: string };
+} | undefined {
+  const email = payer?.email?.trim();
+  const fullName = payer?.name?.trim();
+  const cpf = payer?.cpf?.replace(/\D/g, "") ?? "";
+  const [firstName, ...rest] = fullName ? fullName.split(/\s+/) : [];
+
+  const result: {
+    name?: string;
+    surname?: string;
+    email?: string;
+    identification?: { type: string; number: string };
+  } = {};
+
+  if (firstName) {
+    result.name = firstName;
+  }
+  if (rest.length > 0) {
+    result.surname = rest.join(" ");
+  }
+  if (email) {
+    result.email = email;
+  }
+  if (cpf.length === 11) {
+    result.identification = { type: "CPF", number: cpf };
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 export async function createPreference(
-  items: CartItem[],
+  items: PreferenceItem[],
   orderId: string,
+  payer?: PreferencePayer,
 ): Promise<CreatePreferenceResult> {
   const client = getMercadoPagoClient();
   if (!client) {
@@ -56,12 +110,14 @@ export async function createPreference(
         items: items.map((item) => ({
           id: item.slug,
           title: item.name,
+          description: item.description ?? item.name,
           quantity: item.quantity,
           unit_price: Number(item.price.toFixed(2)),
           currency_id: "BRL",
           picture_url: `${baseUrl}${item.image}`,
-          category_id: "others",
+          category_id: item.category ?? "others",
         })),
+        payer: buildPayer(payer),
         external_reference: orderId,
         auto_return: baseUrl.startsWith("https://") ? "approved" : undefined,
         back_urls: {

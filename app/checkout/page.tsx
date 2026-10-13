@@ -17,11 +17,27 @@ function CheckoutContent() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [checkout, setCheckout] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState("");
 
+  function formatCpf(value: string): string {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+  }
+
   async function handleCheckout(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (cpf.replace(/\D/g, "").length !== 11) {
+      setCheckout("error");
+      setError("Informe um CPF válido (11 dígitos).");
+      return;
+    }
+
     setCheckout("loading");
     setError("");
 
@@ -29,7 +45,7 @@ function CheckoutContent() {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, name, email }),
+        body: JSON.stringify({ items, name, email, cpf }),
       });
       const data = (await response.json()) as {
         initPoint?: string;
@@ -122,6 +138,29 @@ function CheckoutContent() {
               placeholder="voce@email.com"
               className="h-12 rounded-xl border border-zinc-300 bg-white px-4 text-zinc-900 outline-none transition-colors focus:border-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="cpf"
+              className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
+            >
+              CPF
+            </label>
+            <input
+              id="cpf"
+              type="text"
+              inputMode="numeric"
+              required
+              value={cpf}
+              onChange={(e) => setCpf(formatCpf(e.target.value))}
+              placeholder="000.000.000-00"
+              className="h-12 rounded-xl border border-zinc-300 bg-white px-4 text-zinc-900 outline-none transition-colors focus:border-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+            />
+            <p className="text-xs text-zinc-400">
+              O CPF é enviado com segurança ao Mercado Pago para confirmar a
+              titularidade do cartão.
+            </p>
           </div>
 
           {error && (
