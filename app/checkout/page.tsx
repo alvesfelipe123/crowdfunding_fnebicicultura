@@ -3,10 +3,17 @@
 import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Lock, ShieldCheck } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
+
+declare global {
+  interface Window {
+    MP_DEVICE_SESSION_ID?: string;
+  }
+}
 
 type CheckoutStatus = "idle" | "loading" | "error";
 
@@ -18,6 +25,7 @@ function CheckoutContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
+  const [deviceId, setDeviceId] = useState("");
   const [checkout, setCheckout] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState("");
 
@@ -45,7 +53,7 @@ function CheckoutContent() {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, name, email, cpf }),
+        body: JSON.stringify({ items, name, email, cpf, deviceId }),
       });
       const data = (await response.json()) as {
         initPoint?: string;
@@ -83,6 +91,12 @@ function CheckoutContent() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <Script
+        src="https://www.mercadopago.com/v2/security.js"
+        strategy="afterInteractive"
+        onReady={() => setDeviceId(window.MP_DEVICE_SESSION_ID ?? "")}
+        {...{ view: "checkout" }}
+      />
       <h1 className="mb-8 text-3xl font-bold tracking-tight">Checkout</h1>
 
       {status === "pending" && (
@@ -93,7 +107,21 @@ function CheckoutContent() {
       )}
       {status === "failure" && (
         <div className="mb-8 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
-          O pagamento não foi concluído. Você pode tentar novamente abaixo.
+          <p className="font-medium">O pagamento não foi concluído.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>
+              Não repita a mesma tentativa em sequência: o Mercado Pago pode
+              bloquear pagamentos idênticos por segurança.
+            </li>
+            <li>
+              Se possível, pague com <strong>Pix</strong> ou com o saldo da sua
+              carteira do Mercado Pago — a aprovação é imediata.
+            </li>
+            <li>
+              No cartão, tente outro cartão ou aguarde alguns minutos antes de
+              tentar novamente.
+            </li>
+          </ul>
         </div>
       )}
 

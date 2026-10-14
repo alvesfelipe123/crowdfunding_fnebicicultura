@@ -11,6 +11,7 @@ export async function POST(request: Request) {
       name?: string;
       email?: string;
       cpf?: string;
+      deviceId?: string;
     };
 
     const items = (body.items ?? [])
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
       }),
       order.id,
       { name: body.name, email: body.email, cpf: body.cpf },
+      body.deviceId,
     );
 
     if (!preference.ok) {

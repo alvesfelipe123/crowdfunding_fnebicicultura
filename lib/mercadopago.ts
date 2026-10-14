@@ -91,6 +91,7 @@ export async function createPreference(
   items: PreferenceItem[],
   orderId: string,
   payer?: PreferencePayer,
+  deviceId?: string,
 ): Promise<CreatePreferenceResult> {
   const client = getMercadoPagoClient();
   if (!client) {
@@ -106,6 +107,7 @@ export async function createPreference(
   try {
     const preference = new Preference(client);
     const response = await preference.create({
+      ...(deviceId ? { requestOptions: { meliSessionId: deviceId } } : {}),
       body: {
         items: items.map((item) => ({
           id: item.slug,
